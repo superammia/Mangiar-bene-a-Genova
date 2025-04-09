@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Mangiar bene a Genova</title>
+
+  <!-- Aggiunti script Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+  <!-- Configurazione Firebase -->
+  <script>
+    // Configurazione Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfzjd1597nRYpRS3eqjmtGwpf-iaIiZ4s",
+      authDomain: "mangiar-bene-a-genova.firebaseapp.com",
+      databaseURL: "https://mangiar-bene-a-genova-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "mangiar-bene-a-genova",
+      storageBucket: "mangiar-bene-a-genova.firebasestorage.app",
+      messagingSenderId: "907544298697",
+      appId: "1:907544298697:web:49f1c16a01a2439c97f918",
+      measurementId: "G-RJX8HCX637"
+    };
+
+    // Inizializza Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Rendilo disponibile globalmente
+    window.firebaseDB = firebase.database();
+  </script>
+
+  <style>
+    /* Reset e stili generali */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f5;
+    }
+
+    /* Header */
+    .header {
+      background-color: #E53935;
+      color: white;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+    }
+
+    /* Admin Panel */
+    .admin-panel {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .analytics-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .analytics-table th,
+    .analytics-table td {
+      border: 1px solid #e0e0e0;
+      padding: 0.75rem;
+      text-align: left;
+    }
+
+    .analytics-table th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+
+    .analytics-table tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+
+    .refresh-button {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    .clear-button {
+      background-color: #F44336;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      margin-left: 10px;
+    }
+
+    .demo-data-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      margin-left: 10px;
+    }
+
+    .auto-refresh-toggle {
+      margin-left: 15px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .auto-refresh-toggle input {
+      margin-right: 5px;
+    }
+
+    #loadingIndicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    #loadingIndicator .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top: 4px solid #2196F3;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    #statusMessage {
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+
+    .success {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .error {
+      background-color: #FFEBEE;
+      color: #C62828;
+    }
+
+    .warning {
+      background-color: #FFF8E1;
+      color: #FF8F00;
+    }
+
+    .refresh-info {
+      font-size: 0.9rem;
+      color: #666;
+      margin-left: 10px;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 1rem;
+      background-color: #333;
+      color: white;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <h1>Mangiar bene a Genova - Admin</h1>
+    <p class="subtitle">Dashboard Analytics</p>
+  </header>
+
+  <div class="admin-panel">
+    <h2>Statistiche Ristoranti</h2>
+    <div>
+      <button id="refreshButton" class="refresh-button">Aggiorna Dati</button>
+      <button id="clearButton" class="clear-button">Cancella Dati</button>
+      <button id="demoDataButton" class="demo-data-button">Genera Dati Demo</button>
+      <label class="auto-refresh-toggle">
+        <input type="checkbox" id="autoRefreshToggle" checked>
+        Aggiorna automaticamente
+      </label>
+      <span id="lastRefresh" class="refresh-info"></span>
+    </div>
+
+    <div id="loadingIndicator" style="display: none;">
+      <div class="spinner"></div>
+      <p>Caricamento dati in corso...</p>
+    </div>
+
+    <div id="statusMessage" style="display: none;"></div>
+
+    <div id="analyticsContainer">
+      <!-- I dati di analytics verranno inseriti qui -->
+      <p>In attesa di caricare i dati...</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2025 Mangiar bene a Genova. Tutti i diritti riservati.</p>
+  </footer>
+
+  <script>
+    // Dati dei ristoranti di fallback (usati solo se non ci sono dati reali)
+    const FALLBACK_DATA = {
+      "Trattoria Da Mario": {
+        totalViews: 15,
+        clicksToMaps: 8,
+        lastViewed: new Date().toISOString()
+      },
+      "Ristorante Il Genovese": {
+        totalViews: 12,
+        clicksToMaps: 5,
+        lastViewed: new Date().toISOString()
+      },
+      "Osteria del Raviolo": {
+        totalViews: 7,
+        clicksToMaps: 3,
+        lastViewed: new Date().toISOString()
+      }
+    };
+
+    // Variabile per memorizzare l'ID dell'intervallo di aggiornamento automatico
+    let autoRefreshIntervalId = null;
+
+    // Funzione per mostrare il messaggio di stato
+    function showStatus(message, type = 'success') {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = message;
+
+      // Rimuovi tutte le classi precedenti
+      statusEl.className = '';
+
+      // Aggiungi la classe appropriata
+      if (type === 'error') {
+        statusEl.classList.add('error');
+      } else if (type === 'warning') {
+        statusEl.classList.add('warning');
+      } else {
+        statusEl.classList.add('success');
+      }
+
+      statusEl.style.display = 'block';
+
+      // Nascondi il messaggio dopo 5 secondi
+      setTimeout(() => {
+        statusEl.style.display = 'none';
+      }, 5000);
+    }
+
+    // Funzione per mostrare/nascondere l'indicatore di caricamento
+    function toggleLoading(show) {
+      document.getElementById('loadingIndicator').style.display = show ? 'flex' : 'none';
+    }
+
+    // Funzione per salvare i dati demo in Firebase
+    function saveDemoData() {
+      try {
+        const analyticsRef = window.firebaseDB.ref('analytics');
+
+        // Trasforma i dati di fallback per il nuovo formato
+        const transformedData = {};
+        for (const [ristoranteName, data] of Object.entries(FALLBACK_DATA)) {
+          const safeKey = ristoranteName.replace(/[.#$/[\]]/g, '_');
+          transformedData[safeKey] = data;
+
+          // Salva anche i dati base del ristorante
+          const ristoranteData = {
+            nome: ristoranteName,
+            indirizzo: ristoranteName.includes("Mario") ? "Via Canneto il Lungo 29r, Genova" :
+              ristoranteName.includes("Genovese") ? "Via Galata 35R, Genova" :
+                "Vico Falamonica 9R, Genova",
+            categoria: ristoranteName.includes("Mario") ? "Trattoria" :
+              ristoranteName.includes("Genovese") ? "Ristorante" :
+                "Osteria",
+            specialita: ristoranteName.includes("Mario") ? "Pansoti al sugo di noci" :
+              ristoranteName.includes("Genovese") ? "Trenette al pesto" :
+                "Ravioli alla genovese",
+            valutazione: ristoranteName.includes("Mario") ? 4.5 :
+              ristoranteName.includes("Genovese") ? 3.7 :
+                4.3,
+            num_recensioni: ristoranteName.includes("Mario") ? 186 :
+              ristoranteName.includes("Genovese") ? 1164 :
+                237,
+            createdAt: new Date().toISOString()
+          };
+
+          window.firebaseDB.ref('ristoranti/' + safeKey).set(ristoranteData);
+        }
+
+        // Salva i dati demo in Firebase
+        analyticsRef.set(transformedData)
+          .then(() => {
+            showStatus("Dati demo salvati in Firebase!");
+            console.log("Dati demo salvati in Firebase");
+
+            // Aggiorna la visualizzazione per mostrare i nuovi dati
+            setTimeout(displayAnalytics, 300);
+          })
+          .catch(error => {
+            console.error("Errore nel salvataggio dei dati demo:", error);
+            showStatus("Errore nel salvataggio dei dati demo: " + error.message, 'error');
+          });
+      } catch (error) {
+        console.error("Errore nel salvataggio dei dati demo:", error);
+        showStatus("Errore nel salvataggio dei dati demo: " + error.message, 'error');
+      }
+    }
+
+    // Funzione per visualizzare i dati da Firebase
+    function displayAnalytics() {
+      console.log("Visualizzazione dati da Firebase...");
+      toggleLoading(true);
+
+      try {
+        // Riferimento ai dati dei ristoranti
+        const analyticsRef = window.firebaseDB.ref('analytics');
+
+        // Ascolta i dati
+        analyticsRef.once('value')
+          .then((snapshot) => {
+            let analyticsData = snapshot.val();
+            let usingFallbackData = false;
+
+            // Se non ci sono dati, usa i dati di fallback MA NON SALVARLI in Firebase
+            if (!analyticsData || Object.keys(analyticsData).length === 0) {
+              console.log("Nessun dato trovato, uso i dati di fallback");
+              analyticsData = FALLBACK_DATA;
+              usingFallbackData = true;
+              showStatus("Mostrando dati di esempio. Nessun dato reale disponibile.", 'warning');
+            } else {
+              console.log("Dati trovati in Firebase:", analyticsData);
+              // Mostriamo il messaggio solo al primo caricamento, non durante l'aggiornamento automatico
+              if (!document.getElementById('analyticsContainer').querySelector('table')) {
+                showStatus("Dati caricati con successo!");
+              }
+            }
+
+            // Ottieni il contenitore
+            const container = document.getElementById('analyticsContainer');
+
+            // Crea la tabella HTML
+            let tableHTML = '<table class="analytics-table">';
+            tableHTML += '<thead><tr><th>Ristorante</th><th>Visualizzazioni</th><th>Click su Maps</th><th>Tasso di Conversione</th><th>Ultima Visualizzazione</th></tr></thead>';
+            tableHTML += '<tbody>';
+
+            // Aggiungi righe per ogni ristorante
+            for (const [ristoranteId, data] of Object.entries(analyticsData)) {
+              // Otteniamo il nome del ristorante (decodificando l'ID se necessario)
+              const ristoranteName = usingFallbackData ? ristoranteId : ristoranteId.replace(/_/g, ' ');
+
+              const conversionRate = data.totalViews > 0
+                ? ((data.clicksToMaps / data.totalViews) * 100).toFixed(1)
+                : '0';
+
+              const lastViewed = data.lastViewed
+                ? new Date(data.lastViewed).toLocaleString()
+                : 'Mai';
+
+              tableHTML += `
+                <tr>
+                  <td>${ristoranteName}</td>
+                  <td>${data.totalViews}</td>
+                  <td>${data.clicksToMaps}</td>
+                  <td>${conversionRate}%</td>
+                  <td>${lastViewed}</td>
+                </tr>
+              `;
+            }
+
+            tableHTML += '</tbody></table>';
+
+            // Aggiungi un messaggio che indica se i dati sono di esempio o reali
+            if (usingFallbackData) {
+              tableHTML = '<div class="warning" style="margin-bottom: 15px; padding: 10px;">⚠️ Questi sono dati di ESEMPIO. Clicca su "Genera Dati Demo" per creare dati in Firebase o utilizza l\'app principale.</div>' + tableHTML;
+            } else {
+              tableHTML = '<div class="success" style="margin-bottom: 15px; padding: 10px;">✅ Questi sono DATI REALI salvati in Firebase.</div>' + tableHTML;
+            }
+
+            // Imposta il contenuto HTML
+            container.innerHTML = tableHTML;
+
+            // Aggiorna l'informazione sull'ultimo aggiornamento
+            document.getElementById('lastRefresh').textContent = 'Ultimo aggiornamento: ' + new Date().toLocaleTimeString();
+
+            console.log("Dati visualizzati con successo");
+          })
+          .catch((error) => {
+            console.error("Errore nel recupero dati da Firebase:", error);
+            showStatus("Errore nel caricamento dei dati: " + error.message, 'error');
+          })
+          .finally(() => {
+            toggleLoading(false);
+          });
+      } catch (error) {
+        console.error("Errore nella visualizzazione dei dati:", error);
+        showStatus("Errore nel caricamento dei dati: " + error.message, 'error');
+        toggleLoading(false);
+      }
+    }
+
+    // Funzione per cancellare i dati
+    function clearAnalyticsData() {
+      try {
+        // Riferimento ai dati dei ristoranti
+        const analyticsRef = window.firebaseDB.ref('analytics');
+
+        // Rimuovi i dati da Firebase
+        analyticsRef.remove()
+          .then(() => {
+            console.log("Dati cancellati con successo da Firebase");
+            // Mostra un messaggio di conferma
+            showStatus("Dati cancellati con successo!");
+            // Aggiorna la visualizzazione
+            setTimeout(displayAnalytics, 300);
+          })
+          .catch((error) => {
+            console.error("Errore nella cancellazione dei dati da Firebase:", error);
+            showStatus("Errore nella cancellazione dei dati: " + error.message, 'error');
+          });
+      } catch (error) {
+        console.error("Errore nella cancellazione dei dati:", error);
+        showStatus("Errore nella cancellazione dei dati: " + error.message, 'error');
+      }
+    }
+
+    // Funzione per ascoltare gli aggiornamenti in tempo reale da Firebase
+    function listenForRealtimeUpdates() {
+      const analyticsRef = window.firebaseDB.ref('analytics');
+
+      // Ascolta gli aggiornamenti in tempo reale
+      analyticsRef.on('value', (snapshot) => {
+        console.log("Aggiornamento in tempo reale ricevuto da Firebase");
+        // Aggiorna la visualizzazione
+        displayAnalytics();
+      });
+    }
+
+    // Funzione per avviare l'aggiornamento automatico dei dati
+    function startAutoRefresh() {
+      // Ferma eventuali intervalli precedenti
+      stopAutoRefresh();
+
+      // Avvia l'ascolto in tempo reale da Firebase
+      listenForRealtimeUpdates();
+
+      console.log("Aggiornamento automatico avviato con Firebase Realtime Database");
+    }
+
+    // Funzione per fermare l'aggiornamento automatico
+    function stopAutoRefresh() {
+      // Smetti di ascoltare gli aggiornamenti in tempo reale
+      window.firebaseDB.ref('analytics').off();
+      console.log("Aggiornamento automatico fermato");
+    }
+
+    // Inizializza la pagina quando è caricata
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log("Pagina caricata, inizializzazione...");
+
+      // Aggiungi event listener al pulsante di aggiornamento
+      const refreshButton = document.getElementById('refreshButton');
+      if (refreshButton) {
+        refreshButton.addEventListener('click', displayAnalytics);
+      }
+
+      // Aggiungi event listener al pulsante di cancellazione
+      const clearButton = document.getElementById('clearButton');
+      if (clearButton) {
+        clearButton.addEventListener('click', function () {
+          if (confirm("Sei sicuro di voler cancellare tutti i dati delle statistiche?")) {
+            clearAnalyticsData();
+          }
+        });
+      }
+
+      // Aggiungi event listener al pulsante per generare dati demo
+      const demoDataButton = document.getElementById('demoDataButton');
+      if (demoDataButton) {
+        demoDataButton.addEventListener('click', function () {
+          if (confirm("Vuoi generare dati demo e salvarli in Firebase? Questo sovrascriverà eventuali dati esistenti.")) {
+            saveDemoData();
+          }
+        });
+      }
+
+      // Aggiungi event listener al toggle per l'aggiornamento automatico
+      const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+      if (autoRefreshToggle) {
+        autoRefreshToggle.addEventListener('change', function () {
+          if (this.checked) {
+            startAutoRefresh();
+            showStatus("Aggiornamento automatico attivato");
+          } else {
+            stopAutoRefresh();
+            showStatus("Aggiornamento automatico disattivato");
+          }
+        });
+      }
+
+      // Carica i dati automaticamente
+      setTimeout(displayAnalytics, 500);
+
+      // Avvia l'aggiornamento automatico se il toggle è attivo
+      if (document.getElementById('autoRefreshToggle').checked) {
+        startAutoRefresh();
+      }
+    });
+  </script>
+</body>
+
+</html>

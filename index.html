@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mangiar bene a Genova</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Aggiunti script Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+  <!-- Configurazione Firebase -->
+  <script>
+    // Configurazione Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfzjd1597nRYpRS3eqjmtGwpf-iaIiZ4s",
+      authDomain: "mangiar-bene-a-genova.firebaseapp.com",
+      databaseURL: "https://mangiar-bene-a-genova-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "mangiar-bene-a-genova",
+      storageBucket: "mangiar-bene-a-genova.firebasestorage.app",
+      messagingSenderId: "907544298697",
+      appId: "1:907544298697:web:49f1c16a01a2439c97f918",
+      measurementId: "G-RJX8HCX637"
+    };
+
+    // Inizializza Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Rendilo disponibile globalmente
+    window.firebaseDB = firebase.database();
+  </script>
+</head>
+
+<body>
+  <header class="header">
+    <h1>Mangiar bene a Genova</h1>
+    <p class="subtitle">Trova i migliori ristoranti vicino a te</p>
+  </header>
+
+  <main class="main-content">
+    <section class="nearby-section">
+      <h2>Ristoranti vicino a te</h2>
+      <p>Trova i migliori ristoranti entro 1000 metri dalla tua posizione</p>
+
+      <button id="findNearbyPizzerieButton" class="search-button">
+        Trova ristoranti vicini
+      </button>
+
+      <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Ricerca in corso...</p>
+      </div>
+
+      <div id="errorContainer" class="error-message" style="display: none;"></div>
+
+      <div id="nearbyPizzerieContainer" class="pizzerie-container">
+        <!-- I ristoranti vicini verranno inseriti qui dinamicamente -->
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2025 Mangiar bene a Genova. Tutti i diritti riservati.</p>
+  </footer>
+
+  <!-- Aggiungi il file analytics.js prima di app.js -->
+  <script src="analytics.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
